@@ -10,11 +10,52 @@ type Sene = {
   enemy: {
     x: number;
     y: number;
-  }
+  };
+};
+
+type GameConfig = {
+  playerSpeed: number;
+  enemySpeed: number;
+
+  initialPosition: {
+    player: {
+      x: number;
+      y: number;
+    };
+    enemy: {
+      x: number;
+      y: number;
+    };
+  };
 };
 
 export function useSocketSene() {
-  const [scene, setScene] = useState<Sene | null>(null);
+  const [conf, setConf] = useState<GameConfig>({
+    playerSpeed: 10,
+    enemySpeed: 10,
+    initialPosition: {
+      player: {
+        x: 100,
+        y: 100,
+      },
+      enemy: {
+        x: 700,
+        y: 500,
+      },
+    },
+  });
+
+  const [scene, setScene] = useState<Sene>({
+    player: {
+      x: 100,
+      y: 100,
+    },
+
+    enemy: {
+      x: 700,
+      y: 500,
+    },
+  });
 
   useEffect(() => {
     socket.on("connect", () => {
@@ -25,6 +66,10 @@ export function useSocketSene() {
       console.log("disconnected");
     });
 
+    socket.on("init", (data: GameConfig) => {
+      setConf(data);
+    });
+
     socket.on("seen-update", (data: Sene) => {
       setScene(data);
     });
@@ -32,9 +77,10 @@ export function useSocketSene() {
     return () => {
       socket.off("connect");
       socket.off("disconnect");
+      socket.off("init");
       socket.off("seen-update");
     };
   }, []);
 
-  return scene;
+  return { scene, setScene, conf, setConf };
 }
